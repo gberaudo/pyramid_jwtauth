@@ -236,7 +236,7 @@ class JWTAuthenticationPolicy(object):
         """Get the list of effective principals for the given request.
 
         This method combines the authenticated userid from the request with
-        with the list of groups returned by the groupfinder callback, if any.
+        the list of groups returned by the groupfinder callback, if any.
         """
         principals = [Everyone]
         userid = self._get_credentials(request)
@@ -292,7 +292,7 @@ class JWTAuthenticationPolicy(object):
                    leeway=None, verify=True, options=None):
         """Decode a JWTAuth token into its claims.
 
-        This method deocdes the given JWT to provide the claims.  The JWT can
+        This method decodes the given JWT to provide the claims.  The JWT can
         fail if the token has expired (with appropriate leeway) or if the
         token won't validate due to the secret (key) being wrong.
 
@@ -434,7 +434,7 @@ class JWTAuthenticationPolicy(object):
         """Get the claims from the request - if they exist.
 
         Fetch the claims out of the token on the request, if it exists and is
-        decodable.  Returns None if there are none or it couldn't be docoded.
+        decodable.  Returns None if there are none or it couldn't be decoded.
         """
         userid = self._get_credentials(request)
         if userid is None:
@@ -442,7 +442,7 @@ class JWTAuthenticationPolicy(object):
         return request.environ.get("jwtauth.claims", None)
 
     def _check_signature(self, request):
-        """See if the signature was valid
+        """See if the signature was valid.
 
         It was already checked in _get_credentials() - this function just
         sees if it was valid.
