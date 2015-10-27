@@ -73,6 +73,11 @@ class JWTAuthenticationPolicy(object):
           implementations vary in their use of ``JWT`` (our default) or
           ``Bearer``.
 
+        * additionnal_validation:  A callable taking a Request object, a token
+                                   object and its list of claims, and returning True
+                                   if the token is valid or False if it should be
+                                   rejected.
+
     The following configuration options are to DISABLE the verification options
     in the PyJWT decode function.  If the app configures this then it OUGHT to
     ensure that the claim is verified IN the application.
@@ -120,6 +125,7 @@ class JWTAuthenticationPolicy(object):
                  leeway=None,
                  userid_in_claim=None,
                  scheme='JWT',
+                 additionnal_validation=None,
                  decode_options=None):
         if find_groups is not None:
             self.find_groups = find_groups
@@ -143,6 +149,7 @@ class JWTAuthenticationPolicy(object):
         else:
             self.userid_in_claim = 'sub'
         self.scheme = scheme
+        self.additionnal_validation = additionnal_validation
         self.decode_options = decode_options
 
     @classmethod
@@ -195,6 +202,7 @@ class JWTAuthenticationPolicy(object):
         kwds["leeway"] = settings.pop("leeway", 0)
         kwds["userid_in_claim"] = settings.pop("userid_in_claim", "sub")
         kwds["scheme"] = settings.pop("scheme", "JWT")
+        kwds["additionnal_validation"] = load_function("additionnal_validation", settings)
         disable_options = {
             'verify_signature': settings.pop("disable_verify_signature", None),
             'verify_exp': settings.pop("disable_verify_exp", None),
@@ -407,7 +415,11 @@ class JWTAuthenticationPolicy(object):
         def _get_claims():
             try:
                 claims = self.decode_jwt(request, params['token'], verify=True)
-                return claims, True
+                valid = True
+                if self.additionnal_validation is not None:
+                    valid = self.additionnal_validation(request, params['token'], claims)
+
+                return claims, valid
             except (jwt.DecodeError, jwt.ExpiredSignature):
                 # try again with no verify
                 try:

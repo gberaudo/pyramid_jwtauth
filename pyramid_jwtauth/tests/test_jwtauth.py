@@ -54,6 +54,9 @@ def make_request(config, path="/", environ={}):
 # Something non-callable, to test loading non-callables by name.
 stub_non_callable = None
 
+def stub_additionnal_validation(request, token, claims):
+    """Validation rejecting tokens with claim rejectme."""
+    return not 'rejectme' in claims
 
 def stub_find_groups(userid, request):
     """Groupfinder with the following rules:
@@ -120,6 +123,7 @@ class TestJWTAuthenticationPolicy(unittest.TestCase):
         self.config = Configurator(settings={
             "jwtauth.find_groups": "pyramid_jwtauth.tests.test_jwtauth:stub_find_groups",
             "jwtauth.master_secret": MASTER_SECRET,
+            "jwtauth.additionnal_validation": "pyramid_jwtauth.tests.test_jwtauth:stub_additionnal_validation",
         })
         self.config.include("pyramid_jwtauth")
         self.config.add_route("public", "/public")
@@ -322,6 +326,16 @@ class TestJWTAuthenticationPolicy(unittest.TestCase):
         self.assertTrue('urn:websandhq.co.uk/auth:jti' in encoded_claims)
         self.assertEqual(encoded_claims['urn:websandhq.co.uk/auth:jti'],
                           'hello')
+
+    def test_can_get_do_additionnal_validation_on_token(self):
+        claims = {
+            'rejectme': 'Reject this token'
+        }
+        req = self._make_authenticated_request("test@moz.com",
+                                               "/auth",
+                                               claims=claims)
+
+        self.app.request(req, status=401)
 
 
     # def test_authentication_with_far_future_timestamp_fails(self):
